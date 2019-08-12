@@ -1,3 +1,4 @@
+import socket
 
 
 class RobotConnection:
@@ -10,3 +11,9 @@ class RobotConnection:
 
     def __eq__(self, other):
         return self.id == other.id
+
+    def send(self, local_socket, msg):
+        bytes_to_send = str.encode(msg)
+        print("sending '" + str(bytes_to_send) + "' to " + str(self.address))
+        local_socket.sendto(bytes_to_send, self.address)
+        # self.UDPClientSocket.sendto(bytes_to_send, self.address)

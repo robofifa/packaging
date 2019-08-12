@@ -1,7 +1,8 @@
 import socket
+from time import sleep
 
 localIP = "192.168.43.12"
-localPort = 1234
+localPort = 0xF1FA
 bufferSize = 1024
 msgFromServer = "Hello UDP Client"
 
@@ -25,6 +26,6 @@ while True:
 
     print(clientMsg)
     print(clientIP)
-
+    sleep(0.1)
     # Sending a reply to client
     UDPServerSocket.sendto(bytesToSend, address)

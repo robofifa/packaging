@@ -1,53 +1,86 @@
 from RobotConnection import *
 from time import sleep
+import json
+import warnings
+
+class Server:
+    """
+    maintains connections with active robots
+    """
+    def __init__(self):
+        warnings.simplefilter('always', UserWarning)
+        try:
+            self.local_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.local_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.local_socket.settimeout(1.0)
+            self.local_socket.bind(('', 0xF1FA))
+        except socket.error as e:
+            print('Failed to create socket. Error Code : ' + str(e))
+            raise e
+        self.robot_connections = []
+        self.connected_robot_ids = set()
+
+    def check_for_request(self):
+        """
+        check whether a new robot is requesting messages
+        :return:
+        """
+        try:
+            data, address = self.local_socket.recvfrom(1024)
+        except socket.timeout:
+            print("nothing received")
+            return
+        robot_id = decode_message(data)
+        new_robot = RobotConnection(address, robot_id)
+        self.add_new_robot(new_robot)
+
+    def add_new_robot(self, new_robot):
+        """
+        safely adds a new robot connection
+        :param new_robot:
+        :return:
+        """
+        if new_robot in self.robot_connections:
+            self.robot_connections = [new_robot if new_robot is robot else robot for robot in self.robot_connections]
+            print("\033[1;31;0mreconnected to: " + str(new_robot) + "\033[0;0m ")
+        else:
+            self.robot_connections.append(new_robot)
+            self.connected_robot_ids.add(new_robot.id)
+            print("new connection: " + str(new_robot))
+
+    def send_to_robot(self, robot_id, msg):
+        success = False
+        for robot in self.robot_connections:
+            if robot_id is robot.id:
+                if robot.send(self.local_socket, msg):
+                    success = True
+        return success
 
 
-def create_connection():
+def decode_message(data):
+    """
+    decodes messages coming from a robot
+    :param data: received raw string
+    :return: tuple containing data from the message
+    """
     try:
-        socket1 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socket1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        socket1.settimeout(1.0)
-    except socket.error as e:
-        print('Failed to create socket. Error Code : ' + str(e))
-        raise e
-
-    try:
-        socket1.bind(('', 0xF1FA))
-    except socket.error as e:
-        print('Bind failed.. Error Code : ' + str(e))
-        raise e
-
-    return socket1
-
-
-def wait_for_request(sock):
-    print('Server listening')
-    try:
-        data, address = sock.recvfrom(1024)
-    except socket.timeout:
-        print("nothing received")
-        return None
-
-    return RobotConnection(address, data)
+        data_dict = json.loads(data)
+        robot_id = data_dict['id']
+    except json.decoder.JSONDecodeError:
+        print("unreadable data received: " + str(data))
+        return
+    return robot_id
 
 
 def main():
-    robots = []
-    socket1 = create_connection()
+    server = Server()
     while True:
-        new_robot = wait_for_request(socket1)
-        if new_robot is not None:
-            if new_robot in robots:
-                robots = [new_robot if new_robot is robot else robot for robot in robots]
-            else:
-                robots.append(new_robot)
-        print("connected to " + str(len(robots)) + " robots")
-        sleep(0.1)
-        for robot in robots:
-            print(str(robot) + ", ")
-            robot.send(socket1, "go fast")
-
-    socket1.close()
+        server.check_for_request()
+        print("connected to " + str(len(server.robot_connections)) + " robots")
+        sleep(1)
+        for robot_id in range(10):
+            server.send_to_robot(robot_id, "go fast " + str(robot_id))
+    server.local_socket.close()
 
 
 if __name__ == '__main__':

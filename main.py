@@ -9,25 +9,19 @@ def main():
     try:
         with open('robot_wheel_speeds', "rb") as f:
             robot_messages.ParseFromString(f.read())
-
-        robots = []
-        socket1 = server.create_connection()
-        while True:
-            new_robot = server.wait_for_request(socket1)
-            if new_robot is not None:
-                if new_robot in robots:
-                    robots = [new_robot if new_robot is robot else robot for robot in robots]
-                else:
-                    robots.append(new_robot)
-            print("connected to " + str(len(robots)) + " robots")
-            sleep(0.1)
-            for robot_message in robot_messages.robots:
-                for robot in robots:
-                    if robot_message.id is robot.id:
-                        print(str(robot) + ", ")
-                        robot.send(socket1, str(robot_message.left) + str(robot_message.right))
     except IOError:
         print('robot_wheel_speeds' + ": File not found.")
+
+    robot_server = server.Server()
+    while True:
+        robot_server.check_for_request()
+        print("connected to " + str(len(robot_server.robot_connections)) + " robots")
+        sleep(1)
+        for robot_message in robot_messages.robots:
+            msg = str(robot_message.left) + str(robot_message.right)
+            print(msg)
+            robot_server.send_to_robot(robot_message.id, msg)
+    robot_server.local_socket.close()
 
 
 if __name__ == '__main__':

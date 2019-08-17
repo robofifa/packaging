@@ -26,6 +26,7 @@ def main():
     client.loop_start()  # start the loop
     print("Subscribing to topic", "RoboFIFA/packaging")
     client.subscribe("RoboFIFA/packaging")
+    client.subscribe("esp32/temperature")
     #
     # try:
     #     with open('robot_wheel_speeds', "rb") as f:

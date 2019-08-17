@@ -38,17 +38,23 @@ class Server:
         """
         safely adds a new robot connection
         :param new_robot:
-        :return:
+        :return: None
         """
         if new_robot in self.robot_connections:
             self.robot_connections = [new_robot if new_robot is robot else robot for robot in self.robot_connections]
-            print("\033[1;31;0mreconnected to: " + str(new_robot) + "\033[0;0m ")
+            warnings.warn("reconnected to: %s" % str(new_robot))
         else:
             self.robot_connections.append(new_robot)
             self.connected_robot_ids.add(new_robot.id)
-            print("new connection: " + str(new_robot))
+            print("new connection: %s" % str(new_robot))
 
     def send_to_robot(self, robot_id, msg):
+        """
+        Try to send the message to the robot with the given robot_id
+        :param robot_id: id of the robot to send to
+        :param msg: message to send
+        :return: True if message was successfully sent
+        """
         success = False
         for robot in self.robot_connections:
             if robot_id is robot.id:

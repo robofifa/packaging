@@ -30,8 +30,7 @@ robot_message.id = 0
 robot_message.left = -.5
 robot_message.right = .5
 
-print(robot_messages.SerializeToString())
-print(bytearray(robot_messages.SerializeToString()))
 client.publish("RoboFIFA/packaging", robot_messages.SerializeToString())
+client.publish("RoboFIFA/robot0", "some test message for robot0")
 time.sleep(4)  # wait
 client.loop_stop()  # stop the loop

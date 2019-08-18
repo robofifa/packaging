@@ -1,9 +1,5 @@
-import server
 import robot_wheel_speeds_pb2
-import json
 import paho.mqtt.client as mqtt  # import the client1
-import sys
-from time import sleep
 
 robot_messages = robot_wheel_speeds_pb2.Robots()
 
@@ -29,32 +25,14 @@ def main():
     print("Subscribing to topic", "RoboFIFA/packaging")
     client.subscribe("RoboFIFA/packaging")
     client.subscribe("RoboFIFA/feedback/+")
-    #
-    # try:
-    #     with open('robot_wheel_speeds', "rb") as f:
-    #         robot_messages.ParseFromString(f.read())
-    # except IOError:
-    #     print('robot_wheel_speeds' + ": File not found.")
-
-    robot_server = server.Server()
     try:
         while True:
-            # print("Publishing message to topic", "RoboFIFA/packaging")
-            # client.publish("RoboFIFA/packaging", "OFF")
-            robot_server.check_for_request()
-            print("connected to " + str(len(robot_server.robot_connections)) + " robots")
-            sleep(1)
             while robot_messages.robots:
                 robot_message = robot_messages.robots.pop()
-                msg = {"left": robot_message.left, "right": robot_message.right}
-                msg = json.dumps(msg)
-                print(msg)
-                robot_server.send_to_robot(robot_message.id, msg)
                 client.publish("RoboFIFA/robot0", str(robot_message.left))
     except KeyboardInterrupt:
         pass
     print("closing robot server")
-    robot_server.local_socket.close()
     print("stop listening for mqtt messages")
     client.loop_stop()  # stop the loop
 
